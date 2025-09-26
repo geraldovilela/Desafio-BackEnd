@@ -1,4 +1,6 @@
-# Desafio backend Mottu.
+<details>
+    
+    # Desafio backend Mottu.
 Seja muito bem-vindo ao desafio backend da Mottu, obrigado pelo interesse em fazer parte do nosso time e ajudar a melhorar a vida de milhares de pessoas.
 
 ## Instruções
@@ -72,5 +74,13 @@ https://app.swaggerhub.com/apis-docs/Mottu/mottu_desafio_backend/1.0.0
 - Código limpo e organizado
 - Logs bem estruturados
 - Seguir convenções utilizadas pela comunidade
-  
 
+</details>
+## Para rodar o projeto na pasta raiz rode o comando.
+
+```
+docker-compose up --build
+```
+
+o swager do projeto deve estar disponivel no caminho:
+http://localhost:8080/index.html
