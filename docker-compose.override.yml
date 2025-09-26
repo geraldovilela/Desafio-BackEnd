@@ -1,0 +1,64 @@
+services:
+  rental-db:
+    environment:
+      POSTGRES_USER: rental_user
+      POSTGRES_PASSWORD: rental_pass
+      POSTGRES_DB: rental_db
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rental_user -d rental_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - rental_data:/var/lib/postgresql/data
+    networks:
+      - rental-network
+
+  rental-api:
+    environment:
+      - DOTNET_RUNNING_IN_CONTAINER=true
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ASPNETCORE_URLS=http://+:8080
+      - ENABLE_SWAGGER=true
+      - ConnectionStrings__DefaultConnection=Host=rental-db;Port=5432;Database=rental_db;Username=rental_user;Password=rental_pass;Include Error Detail=true
+    ports:
+      - "8080:8080"
+    depends_on:
+      rental-db:
+        condition: service_healthy
+    networks:
+      - rental-network
+
+  # Serviço para executar as migrações
+  migrator:
+    build:
+      context: .
+      dockerfile: RentalApp.Api/Dockerfile
+      target: build
+    container_name: rental-migrator
+    working_dir: /src
+    command: 
+      - /bin/bash
+      - -c
+      - |
+        echo 'Aguardando banco de dados...'
+        sleep 15
+        dotnet tool install --global dotnet-ef --version 8.*
+        export PATH="$PATH:/root/.dotnet/tools"
+        echo 'Executando migrações...'
+        dotnet ef database update --project RentalApp.Infrastructure --startup-project RentalApp.Api --connection "Host=rental-db;Port=5432;Database=rental_db;Username=rental_user;Password=rental_pass"
+        echo 'Migrações concluídas!'
+    depends_on:
+      rental-db:
+        condition: service_healthy
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    networks:
+      - rental-network
+
+networks:
+  rental-network:
+    driver: bridge
+
+volumes:
+  rental_data:

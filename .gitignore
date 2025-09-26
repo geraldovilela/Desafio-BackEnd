@@ -1,0 +1,12 @@
+﻿################################################################################
+# Este arquivo .gitignore foi criado automaticamente pelo Microsoft(R) Visual Studio.
+################################################################################
+
+/.vs
+/RentalApp.Api/obj
+/RentalApp.Core/obj
+/RentalApp.Domain/obj
+/RentalApp.Infrastructure/obj
+/RentalApp.Messaging/obj
+/RentalApp.Tests.Integration/obj
+/RentalApp.Tests.Integration/bin/Debug/net8.0

@@ -1,0 +1,77 @@
+services:
+  rental-db:
+    image: postgres:16
+    container_name: rental-db
+    restart: always
+    environment:
+      POSTGRES_USER: rental_user
+      POSTGRES_PASSWORD: rental_pass
+      POSTGRES_DB: rental_db
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    ports:
+      - "5432:5432"
+    volumes:
+      - rental_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rental_user -d rental_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - rental-network
+
+  rental-rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rental-rabbitmq
+    restart: always
+    environment:
+      RABBITMQ_DEFAULT_USER: dev_user
+      RABBITMQ_DEFAULT_PASS: dev_pass123
+      RABBITMQ_DEFAULT_VHOST: rental_dev
+    ports:
+      - "5672:5672"   # AMQP port
+      - "15672:15672" # Management UI port
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - rental-network
+
+  rental-api:
+    build:
+      context: .
+      dockerfile: RentalApp.Api/Dockerfile
+    container_name: rental-api
+    restart: always
+    ports:
+      - "8080:8080"
+    depends_on:
+      rental-db:
+        condition: service_healthy
+      rental-rabbitmq:
+        condition: service_healthy
+    environment:
+      - DOTNET_RUNNING_IN_CONTAINER=true
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ASPNETCORE_URLS=http://+:8080
+      - ENABLE_SWAGGER=true
+      - ConnectionStrings__DefaultConnection=Host=rental-db;Port=5432;Database=rental_db;Username=rental_user;Password=rental_pass;Include Error Detail=true
+      - RabbitMQ__HostName=rental-rabbitmq
+      - RabbitMQ__Port=5672
+      - RabbitMQ__UserName=dev_user
+      - RabbitMQ__Password=dev_pass123
+      - RabbitMQ__VirtualHost=rental_dev
+    networks:
+      - rental-network
+
+networks:
+  rental-network:
+    driver: bridge
+
+volumes:
+  rental_data:
+  rabbitmq_data:
